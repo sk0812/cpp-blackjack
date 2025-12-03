@@ -1,22 +1,66 @@
 #include <iostream>
 #include <vector>
-#include <format>
+#include <limits>
 #include "card.h"
 #include "hand.h"
 #include "ui.h"
 #include "deck.h"
 
 
+int get_valid_bet(const int& MIN_BET, const int& MAX_BET, int& bankroll ) {
+        int bet;
+        double temp;
+        while (true) {
+            std::cout << "Place bet: ";
+            std::cin >> temp;
+
+            if (std::cin.fail()) {
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                std::cout << "Invalid input. Please enter a number.\n";
+                continue;
+            }
+
+            if (temp!= static_cast<int>(temp)) {
+                std::cout << "Enter whole number.\n";
+                continue;
+            }
+
+            bet = static_cast<int>(temp);
+
+            if (bet < MIN_BET) {
+                std::cout << "Min Bet is £" << MIN_BET << '\n';
+                continue;
+            } else if (bet > MAX_BET) {
+                std::cout << "Max Bet is £" << MAX_BET << '\n';
+                continue;
+            } else if (bet > bankroll) {
+                std::cout << "Bankroll is only £" << bankroll << '\n';
+                continue;
+            } else if (bet % 10 != 0) {
+                std::cout << "Bet needs to be a multiple of 10!\n";
+                continue;
+            } else {
+                bankroll-=bet;
+                break;
+            }
+        }
+
+        return bet;
+}
+
 int main() {
     
-    const int NUM_DECKS {1};
+    const int NUM_DECKS {6};
+    const double RESHUFFLE_THRESHOLD {0.25};
+    constexpr int CARDS_PER_DECK {52};
     const int MIN_BET{20};
     const int MAX_BET{500};
     int bankroll{1000};
     
     std::cout << "\n\n====================Welcome to CLI Blackjack=====================\n\n";
     std::cout << "- Blackjack payout 3:2\n";
-    std::cout << "- Deaker stands on soft 17\n";
+    std::cout << "- Dealer stands on soft 17\n";
     std::cout << "- Table Minimum: £" << MIN_BET << '\n';
     std::cout << "- Table Maximum: £" << MAX_BET << '\n';
     std::cout << "- Starting Balance: £" << bankroll << "\n\n";
@@ -40,35 +84,10 @@ int main() {
         if (play == 'N') break;
         if (play != 'Y') continue;
 
-        int bet;
+        int bet {get_valid_bet(MIN_BET, MAX_BET, bankroll)};
 
-        while (true) {
-            std::cout << "Place bet: ";
-            std::cin >> bet;
 
-            if (std::cin.fail()) {
-                std::cout << "Invalid input. Please enter a number.\n";
-                continue;
-            }
-
-            if (bet < MIN_BET) {
-                std::cout << "Min Bet is £" << MIN_BET << '\n';
-                continue;
-            } else if (bet > MAX_BET) {
-                std::cout << "Max Bet is £" << MAX_BET << '\n';
-                continue;
-            } else if (bet > bankroll) {
-                std::cout << "Bankroll is only £" << bankroll << '\n';
-                continue;
-            } else if (bet % 10 != 0) {
-                std::cout << "Bet needs to be a multiple of 10!\n";
-                continue;
-            } else {
-                break;
-            }
-        }
-
-        if (deck.size() < 15) {
+        if (deck.size() < RESHUFFLE_THRESHOLD*NUM_DECKS*CARDS_PER_DECK) {
             std::cout << "Shuffling Deck...\n";
             deck = make_deck(NUM_DECKS);
             shuffle_deck(deck);
@@ -95,13 +114,13 @@ int main() {
 
             if (player_blackjack && dealer_blackjack) {
                 std::cout << "Both have blackjack — Push!\n";
+                bankroll+=bet;
             } else if (player_blackjack) {
                 std::cout << "Player has blackjack!\n";
                 ++player_wins;
-                bankroll+=bet*1.5;
+                bankroll+=bet*2.5;
             } else {
-                std::cout << "Dealer has blackjack!\n";
-                bankroll-=bet;
+                std::cout << "Dealer has blackjack!\n";;
             }
             continue; 
         }
@@ -121,7 +140,6 @@ int main() {
                 if (hand_value(player) > 21) {
                     std::cout << "Player bust. Dealer wins!\n";
                     round_over = true;
-                    bankroll-=bet;
                 }
             } else if (decision == 'S') {
                 break;
@@ -141,7 +159,7 @@ int main() {
             if (hand_value(dealer) > 21) {
                 std::cout << "Dealer bust. Player wins!\n";
                 ++player_wins;
-                bankroll+=bet;
+                bankroll+=bet*2;
                 round_over = true;
                 break;
             }
@@ -155,12 +173,12 @@ int main() {
         if (p > d) {
             std::cout << "Player wins!\n";
             ++player_wins;
-            bankroll+=bet;
+            bankroll+=bet*2;
         } else if (d > p) { 
             std::cout << "Dealer wins!\n";
-            bankroll-=bet;
         } else {
-            std::cout << "Push (tie)!\n"; 
+            std::cout << "Push (tie)!\n";
+            bankroll+=bet;
         }
 
 
