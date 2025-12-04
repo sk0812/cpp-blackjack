@@ -70,7 +70,7 @@ int main() {
     shuffle_deck(deck);
     int player_wins {0};
     int played {0};
-    while (true) {
+    while (true && bankroll>0) {
         std::cout << "Player wins: " << player_wins << " out of " << played << '\n';
         std::cout << "Bankroll: £" << bankroll << '\n';
 
@@ -113,7 +113,7 @@ int main() {
             print_hand_value(dealer);
 
             if (player_blackjack && dealer_blackjack) {
-                std::cout << "Both have blackjack — Push!\n";
+                std::cout << "Both have blackjack - Push!\n";
                 bankroll+=bet;
             } else if (player_blackjack) {
                 std::cout << "Player has blackjack!\n";
@@ -129,7 +129,13 @@ int main() {
 
         while (!round_over) {
             char decision;
-            std::cout << "\nHit or Stand (H/S): ";
+            bool double_enabled {true};
+            if (player.size() > 2) {
+                double_enabled = false;
+                std::cout << "\nHit, Stand (H/S): ";
+            } else {
+                std::cout << "\nHit, Stand or Double (H/S/D): ";
+            }
             std::cin >> decision;
             decision = std::toupper(static_cast<unsigned char>(decision));
 
@@ -143,6 +149,24 @@ int main() {
                 }
             } else if (decision == 'S') {
                 break;
+            } else if (decision == 'D' && double_enabled) {
+                if (bet > bankroll) {
+                    std::cout << "Bankroll is: £" << bankroll << ". Not enough to double\n";
+                    continue;
+                } else {
+                    bankroll-=bet;
+                    bet*=2;
+                    std::cout << "Doubling bet to £"<< bet <<"\n";
+                    hit(deck, player);
+                    print_player(player);
+                    print_hand_value(player);
+                    if (hand_value(player) > 21) {
+                        std::cout << "Player bust. Dealer wins!\n";
+                        round_over = true;
+                    } else {
+                        break;
+                    }
+                }
             }
         }
 
@@ -180,8 +204,10 @@ int main() {
             std::cout << "Push (tie)!\n";
             bankroll+=bet;
         }
+    }
 
-
+    if (bankroll <= 0) {
+        std::cout << "Out of money!\n";
     }
 
     return 0;
